@@ -90,13 +90,17 @@ string makeInput(){
     return input;
 }
 
-void eineRunde(string wordle){
+void eineRunde(string wordle, int &guess_counter){
     string guess = makeInput();
+
+    guess_counter++;
+
     if(printBoxes(wordle,guess)){
         return;
     }else{
-        eineRunde(wordle);
+        eineRunde(wordle, guess_counter);
     }
+    return;
 }
 
 int select_difficulty(){
@@ -117,14 +121,17 @@ int select_difficulty(){
 
 int main(){
     int difficulty = select_difficulty();
+
+    int guess_counter = 0;
+
     string wordle = chooseNewWordle(difficulty);
 
     int time_beg = time(NULL);
 
-    eineRunde(wordle);
+    eineRunde(wordle,guess_counter);
 
     int time_end = time(NULL);
 
-    cout<<"You took "<<time_end - time_beg<<" seconds."<<endl;
+    cout<<"You took "<<time_end - time_beg<<" seconds and "<<guess_counter<<" guesses"<<endl;
     return 0;
 }
