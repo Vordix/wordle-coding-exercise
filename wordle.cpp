@@ -1,4 +1,6 @@
 #include <iostream>
+#include <time.h>
+#include <fstream>
 
 using namespace std;
 
@@ -22,10 +24,29 @@ using namespace std;
     #define BOLDWHITE   "\033[1m\033[37m"      /* Bold White */
     //source: https://gist.github.com/Kielx/2917687bc30f567d45e15a4577772b02
 
-string chooseNewWordle(){
-    static string wordle = "sepia";
-    //api call to merriam Webster for random word
-    return wordle;
+string chooseNewWordle(int difficulty){
+    int time_beg = time(NULL);
+
+    ifstream words("words.txt");
+    string linebuffer;
+
+    srand(time(NULL));
+    int random_word_pos;
+    if(difficulty == 1){
+        random_word_pos = rand() % 2000;
+    }
+    if(difficulty == 2){
+        random_word_pos = rand() % 3000;
+    }
+    if(difficulty == 3){
+        random_word_pos = rand() % 5756;
+    }
+    
+
+    for(int i=1; i<=random_word_pos; ++i){
+        getline(words,linebuffer);
+    }
+    return linebuffer;
 }
 
 bool printBoxes(string wordle, string guess){
@@ -63,7 +84,7 @@ bool printBoxes(string wordle, string guess){
 }
 
 string makeInput(){
-    cout<<BOLDWHITE<<"--- Choose a Word ---"<<RESET<<endl;
+    cout<<BOLDWHITE<<"--- Guess a Word ---"<<RESET<<endl;
     string input;
     cin>>input;
     return input;
@@ -78,8 +99,32 @@ void eineRunde(string wordle){
     }
 }
 
+int select_difficulty(){
+    int input;
+    cout<<"Select a Difficulty:"<<endl;
+    cout<<BOLDGREEN<<"1 - normal difficulty"<<RESET<<endl;
+    cout<<BOLDYELLOW<<"2 - hard difficulty"<<RESET<<endl;
+    cout<<BOLDRED<<"3 - impossible difficulty"<<RESET<<endl;
+    cout<<endl;
+    cout<<BOLDWHITE<<"--- Choose difficulty Level ---"<<RESET<<endl;
+    cin>>input;
+    if(!(input == 1 || input == 2 || input == 3)){
+        cout<<RED<<"[ERROR] invalid input - please try again"<<RESET<<endl;
+        select_difficulty();
+    }
+    return input;
+}
+
 int main(){
-    string wordle = chooseNewWordle();
+    int difficulty = select_difficulty();
+    string wordle = chooseNewWordle(difficulty);
+
+    int time_beg = time(NULL);
+
     eineRunde(wordle);
+
+    int time_end = time(NULL);
+
+    cout<<"You took "<<time_end - time_beg<<" seconds."<<endl;
     return 0;
 }
