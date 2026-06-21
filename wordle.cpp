@@ -49,7 +49,39 @@ string chooseNewWordle(int difficulty){
     return linebuffer;
 }
 
-bool printBoxes(string wordle, string guess){
+bool is_guess_real_word(string guess){
+    ifstream words("words.txt");
+    string linebuffer;
+
+    for(int i=1; i<=5756; i++){
+        getline(words,linebuffer);
+        if(guess == linebuffer){
+            return true;
+        }
+    }
+    cout<<BOLDRED<<"[ERROR]"<<RESET<<RED<<" guessed word is not in word list - guess a different word"<<RESET<<endl;
+    return false;
+}
+
+void write_boxes_when_partially_correct(char solution[5][2]){
+
+    for(int i=0;i<=4;i++){
+        if(solution[i][1] == 'w'){
+            cout<<BOLDBLACK<<'['<<solution[i][0]<<']'<<RESET;
+        }else{
+            if(solution[i][1] == 'y'){
+                cout<<BOLDYELLOW<<'['<<solution[i][0]<<']'<<RESET;
+            }else{
+                if(solution[i][1] == 'g'){
+                    cout<<BOLDGREEN<<'['<<solution[i][0]<<']'<<RESET;
+                }
+            }
+        }
+    }
+    cout<<endl;
+}
+
+bool is_correct_and_prints(string wordle, string guess){
 
     if(guess == wordle){
         cout<<BOLDGREEN<<   "["<<guess[0]<<"]"<<
@@ -59,27 +91,34 @@ bool printBoxes(string wordle, string guess){
                             "["<<guess[4]<<"]"<<RESET;
 
                             return true;
-    }else{
-            for(int i=0;i<=4;i++){
-                if(guess[i] == wordle[i]){
-                    cout<<BOLDGREEN<<"["<<guess[i]<<"]"<<RESET;
-                } else {
-                        bool temp_letter_found = false;
-                            for(int j=0;j<=4;j++){
-                                
-                                if(guess[i] == wordle[j]){
-                                    temp_letter_found = true;
-                                }
-                            }
-                            if(temp_letter_found){
-                                cout<<BOLDYELLOW<<"["<<guess[i]<<"]"<<RESET;
+    }else{ 
 
-                            }else{cout<<BOLDBLACK<<"["<<guess[i]<<"]"<<RESET;}
-                        }
-            } 
-        
+        char solution[5][2];
+
+        for(int i=0; i<=4;i++){
+            solution[i][0] = guess[i];
+            solution[i][1] = 'w'; //w = white -> char not found as default
+
+            if(guess[i] == wordle[i]){
+                solution[i][0] = wordle[i];
+                solution[i][1] = 'g'; //g = green -> char is in wordle and even in the correct place
+
+                wordle[i] = '0'; //crosses out the already used up char so it cannot be used again for a false positive as a yellow char
+                
+            }
         }
-    cout<<endl;
+        for(int i=0; i<=4;i++){
+            for(int j=0; j<=4;j++){
+                if(guess[i] == wordle[j]){
+                    solution[i][0] = wordle[j];
+                    solution[i][1] = 'y'; //y = yellow -> char is in there somewhere but not on the correct position
+
+                    wordle[j] = '0'; //cross-out
+                }
+            }
+        }
+        write_boxes_when_partially_correct(solution);
+    }
     return false;
 }
 
@@ -87,15 +126,20 @@ string makeInput(){
     cout<<BOLDWHITE<<"--- Guess a Word ---"<<RESET<<endl;
     string input;
     cin>>input;
+
     return input;
 }
 
 void eineRunde(string wordle, int &guess_counter){
     string guess = makeInput();
 
+    while(!(is_guess_real_word(guess))){
+        guess = makeInput();
+    }
+
     guess_counter++;
 
-    if(printBoxes(wordle,guess)){
+    if(is_correct_and_prints(wordle,guess)){
         return;
     }else{
         eineRunde(wordle, guess_counter);
