@@ -110,10 +110,11 @@ bool is_correct_and_prints(string wordle, string guess){
         for(int i=0; i<=4;i++){
             for(int j=0; j<=4;j++){
                 if(guess[i] == wordle[j]){
-                    solution[i][0] = wordle[j];
-                    solution[i][1] = 'y'; //y = yellow -> char is in there somewhere but not on the correct position
-
-                    wordle[j] = '0'; //cross-out
+                    if(!(solution[i][1]=='g')){
+                        solution[i][0] = wordle[j];
+                        solution[i][1] = 'y'; //y = yellow -> char is in there somewhere but not on the correct position
+                        wordle[j] = '0'; //cross-out                        }
+                    }
                 }
             }
         }
