@@ -1,6 +1,7 @@
 #include <iostream>
 #include <time.h>
 #include <fstream>
+#include <map>
 
 using namespace std;
 
@@ -23,6 +24,97 @@ using namespace std;
     #define BOLDCYAN    "\033[1m\033[36m"      /* Bold Cyan */
     #define BOLDWHITE   "\033[1m\033[37m"      /* Bold White */
     //source: https://gist.github.com/Kielx/2917687bc30f567d45e15a4577772b02
+
+class Wordle_bot{
+    public:
+char solution[5][2];
+char correct_letters[5];
+char incorrect_letters[21];
+char partially_correct_letters_with_incorrect_pos[20][2];
+
+void bot_guess(string wordle,string guess){
+    fstream file("words.txt");
+    for(int i=0;i<=4;i++){
+        if(guess[i] == wordle[i]){
+            correct_letters[i] = guess[i];
+        }else{
+            for(int j=0;j<=4;j++){
+                if(!(i == j)){
+                    if(guess[i] == wordle[j]){
+                        int l=0;
+                        while(!(partially_correct_letters_with_incorrect_pos[l][0] == '0')){
+                            if(partially_correct_letters_with_incorrect_pos[l][0] != guess[i]){
+                                l++;
+                            }
+                            else{
+                                return;
+                            }
+                        }
+                        partially_correct_letters_with_incorrect_pos[l][0] = guess[i];
+                        partially_correct_letters_with_incorrect_pos[l][1] = char(i);
+                    }
+                    else{
+                        int t=0;
+                        while(!(incorrect_letters[t]=='0')){
+                            t++;
+                        }
+                        incorrect_letters[t] = guess[i];
+                    }
+
+                }
+            }
+        }
+    }
+}
+
+
+void play(string wordle){
+    
+    bot_guess(wordle,"nanny");
+    print_all_arrays();
+}
+
+void print_all_arrays(){
+    cout<<"correct_letters: "<<endl;
+    for(int i = 1; i<= (sizeof(correct_letters) / sizeof(correct_letters[0])); i++){
+        cout<<correct_letters[(i-1)]<<" ";
+    }
+    cout<<endl;
+
+    cout<<"incorrect_letters: "<<endl;
+    for(int i = 1; i<= (sizeof(incorrect_letters) / sizeof(incorrect_letters[0])); i++){
+        cout<<incorrect_letters[(i-1)]<<" ";
+    }
+    cout<<endl;
+
+    cout<<"partially_correct_letters_with_incorrect_pos: "<<endl;
+    for(int i = 1; i<=20; i++){
+        for(int j=0;j<=1;j++){
+            cout<<partially_correct_letters_with_incorrect_pos[(i-1)][j]<<" ";
+        }
+        
+    }
+    cout<<endl;
+}
+
+Wordle_bot(){
+    for(int i=0;i<=4;i++){
+        correct_letters[i] = '0';
+        for(int j=0; j<=1;j++){
+            solution[i][j] = '0';
+        }
+    }
+    for(int i=0; i<=20;i++){
+        incorrect_letters[i] = '0';
+    }
+    for(int i=0;i<=19;i++){
+        for(int j=0;j<=1;j++){
+            partially_correct_letters_with_incorrect_pos[i][j] = '0';
+        }
+    }
+}; //Constructor
+
+};
 
 string chooseNewWordle(int difficulty){
     int time_beg = time(NULL);
@@ -66,7 +158,7 @@ bool is_guess_real_word(string guess){
 void write_boxes_when_partially_correct(char solution[5][2]){
 
     for(int i=0;i<=4;i++){
-        if(solution[i][1] == 'w'){
+        if(solution[i][1] == 'b'){
             cout<<BOLDBLACK<<'['<<solution[i][0]<<']'<<RESET;
         }else{
             if(solution[i][1] == 'y'){
@@ -81,7 +173,7 @@ void write_boxes_when_partially_correct(char solution[5][2]){
     cout<<endl;
 }
 
-bool is_correct_and_prints(string wordle, string guess){
+bool is_correct_and_prints(string wordle, string guess, map<char,char> &farben_map){
 
     if(guess == wordle){
         cout<<BOLDGREEN<<   "["<<guess[0]<<"]"<<
@@ -97,11 +189,17 @@ bool is_correct_and_prints(string wordle, string guess){
 
         for(int i=0; i<=4;i++){
             solution[i][0] = guess[i];
-            solution[i][1] = 'w'; //w = white -> char not found as default
+            solution[i][1] = 'b'; //b = black -> char not found as default
+
+            if(farben_map[solution[i][0]] == 'w'){
+                farben_map[solution[i][0]] = 'b';
+            }
 
             if(guess[i] == wordle[i]){
                 solution[i][0] = wordle[i];
                 solution[i][1] = 'g'; //g = green -> char is in wordle and even in the correct place
+
+                farben_map[wordle[i]] = 'g';
 
                 wordle[i] = '0'; //crosses out the already used up char so it cannot be used again for a false positive as a yellow char
                 
@@ -112,8 +210,13 @@ bool is_correct_and_prints(string wordle, string guess){
                 if(guess[i] == wordle[j]){
                     if(!(solution[i][1]=='g')){
                         solution[i][0] = wordle[j];
-                        solution[i][1] = 'y'; //y = yellow -> char is in there somewhere but not on the correct position
-                        wordle[j] = '0'; //cross-out                        }
+                        solution[i][1] = 'y'; //y = yellow -> char is in there somewhere but not on the correct position 
+
+                        if(farben_map[solution[i][0]] != 'g'){  //green letters should not be overwritten
+                            farben_map[solution[i][0]] = 'y';
+                        } 
+                        wordle[j] = '0';
+                        break;
                     }
                 }
             }
@@ -131,21 +234,48 @@ string makeInput(){
     return input;
 }
 
-void eineRunde(string wordle, int &guess_counter){
+void print_farben_map(map<char,char> &farben_map){
+    for(const auto& item : farben_map){
+        if(item.second == 'w'){
+            cout<<RESET<<WHITE<<"["<<item.first<<"]";
+        }else{
+            if(item.second == 'b'){
+                cout<<BOLDBLACK<<"["<<item.first<<"]";
+            }else{
+                if(item.second == 'y'){
+                    cout<<BOLDYELLOW<<"["<<item.first<<"]";
+                }else{
+                    if(item.second == 'g'){
+                        cout<<BOLDGREEN<<"["<<item.first<<"]";
+                    }
+                }
+            }
+        }
+    }
+    cout<<RESET<<endl;
+}
+
+void eineRunde(string wordle, int &guess_counter, map<char,char> &farben_map){
     string guess = makeInput();
 
-    while(!(is_guess_real_word(guess))){
+    if(guess == "s"){
+        print_farben_map(farben_map);
+        eineRunde(wordle,guess_counter,farben_map);
+
+    }else{      //if you dont want to see the statistics
+        while(!(is_guess_real_word(guess))){
         guess = makeInput();
     }
 
     guess_counter++;
 
-    if(is_correct_and_prints(wordle,guess)){
+    if(is_correct_and_prints(wordle,guess,farben_map)){
         return;
     }else{
-        eineRunde(wordle, guess_counter);
+        eineRunde(wordle, guess_counter, farben_map);
     }
     return;
+    }
 }
 
 int select_difficulty(){
@@ -164,16 +294,51 @@ int select_difficulty(){
     return input;
 }
 
+void mache_farben_map(map<char,char> &farben_map ){
+    farben_map.insert({'a','w'});
+    farben_map.insert({'b','w'});
+    farben_map.insert({'c','w'});
+    farben_map.insert({'d','w'});
+    farben_map.insert({'e','w'});
+    farben_map.insert({'f','w'});
+    farben_map.insert({'g','w'});
+    farben_map.insert({'h','w'});
+    farben_map.insert({'i','w'});
+    farben_map.insert({'j','w'});
+    farben_map.insert({'k','w'});
+    farben_map.insert({'l','w'});
+    farben_map.insert({'m','w'});
+    farben_map.insert({'n','w'});
+    farben_map.insert({'o','w'});
+    farben_map.insert({'p','w'});
+    farben_map.insert({'q','w'});
+    farben_map.insert({'r','w'});
+    farben_map.insert({'s','w'});
+    farben_map.insert({'t','w'});
+    farben_map.insert({'u','w'});
+    farben_map.insert({'v','w'});
+    farben_map.insert({'w','w'});
+    farben_map.insert({'x','w'});
+    farben_map.insert({'y','w'});
+    farben_map.insert({'z','w'});
+}
+
 int main(){
     int difficulty = select_difficulty();
+
+    map<char,char> farben_map;
+    mache_farben_map(farben_map);
 
     int guess_counter = 0;
 
     string wordle = chooseNewWordle(difficulty);
+    
+    Wordle_bot bot;
+    bot.play(wordle);
 
     int time_beg = time(NULL);
 
-    eineRunde(wordle,guess_counter);
+    eineRunde(wordle,guess_counter,farben_map);
 
     int time_end = time(NULL);
 
